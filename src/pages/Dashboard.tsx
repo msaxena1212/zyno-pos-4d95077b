@@ -3,6 +3,7 @@ import { AdminDashboard } from "@/components/dashboards/AdminDashboard";
 import { ManagerDashboard } from "@/components/dashboards/ManagerDashboard";
 import { MarketingDashboard } from "@/components/dashboards/MarketingDashboard";
 import { CashierDashboard } from "@/components/dashboards/CashierDashboard";
+import { StockManagerDashboard } from "@/components/dashboards/StockManagerDashboard";
 
 const Dashboard = () => {
   const { role, loading } = useUserRole();
@@ -18,6 +19,7 @@ const Dashboard = () => {
   if (role === 'admin') return <AdminDashboard />;
   if (role === 'manager') return <ManagerDashboard />;
   if (role === 'marketing_manager') return <MarketingDashboard />;
+  if (role === 'stock_manager') return <StockManagerDashboard />;
   if (role === 'cashier') return <CashierDashboard />;
 
   return (

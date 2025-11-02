@@ -41,10 +41,11 @@ export default function Reports() {
         .from("pos_transactions")
         .select("*");
 
-      // If cashier, only show their own data
+      // Cashiers only see their own data, managers see all
       if (role === 'cashier') {
         transactionsQuery = transactionsQuery.eq("cashier_id", user?.id);
       }
+      // stock_manager and marketing_manager see all data
 
       const { data: transactions, error: txnError } = await transactionsQuery;
 
@@ -103,7 +104,10 @@ export default function Reports() {
         <div>
           <h1 className="text-3xl font-bold">Reports</h1>
           <p className="text-muted-foreground">
-            {role === 'cashier' ? "Your performance reports" : "Sales and performance analytics"}
+            {role === 'cashier' ? "Your performance reports" : 
+             role === 'stock_manager' ? "Inventory and sales analytics" :
+             role === 'marketing_manager' ? "Campaign and sales performance" :
+             "Sales and performance analytics"}
           </p>
         </div>
         <Select value={period} onValueChange={setPeriod}>

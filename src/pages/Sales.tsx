@@ -37,10 +37,11 @@ export default function Sales() {
         .select("*")
         .order("transaction_date", { ascending: false });
 
-      // If cashier, only show their own sales
+      // Cashiers only see their own sales, managers see all
       if (role === 'cashier') {
         query = query.eq("cashier_id", user?.id);
       }
+      // stock_manager and marketing_manager see all sales
 
       const { data, error } = await query;
 
@@ -74,7 +75,10 @@ export default function Sales() {
       <div>
         <h1 className="text-3xl font-bold">Sales</h1>
         <p className="text-muted-foreground">
-          {role === 'cashier' ? "Your sales history" : "All sales transactions"}
+          {role === 'cashier' ? "Your sales history" : 
+           role === 'stock_manager' ? "Product sales data" :
+           role === 'marketing_manager' ? "Campaign sales performance" :
+           "All sales transactions"}
         </p>
       </div>
 

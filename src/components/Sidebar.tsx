@@ -5,12 +5,12 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 const allNavigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ['admin', 'manager', 'marketing_manager', 'cashier', 'stock_manager'] },
-  { name: "POS Checkout", href: "/pos-checkout", icon: ShoppingCart, roles: ['admin', 'manager', 'cashier'] },
-  { name: "Products", href: "/products", icon: Package, roles: ['admin', 'manager', 'cashier', 'stock_manager'] },
-  { name: "Customers", href: "/customers", icon: UserCircle, roles: ['admin', 'manager', 'cashier'] },
-  { name: "Sales", href: "/sales", icon: DollarSign, roles: ['admin', 'manager', 'cashier'] },
-  { name: "Transactions", href: "/transactions", icon: FileText, roles: ['admin', 'manager', 'cashier'] },
-  { name: "Reports", href: "/reports", icon: BarChart3, roles: ['admin', 'manager', 'cashier'] },
+  { name: "POS Checkout", href: "/pos-checkout", icon: ShoppingCart, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
+  { name: "Products", href: "/products", icon: Package, roles: ['admin', 'manager', 'cashier', 'stock_manager', 'marketing_manager'] },
+  { name: "Customers", href: "/customers", icon: UserCircle, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
+  { name: "Sales", href: "/sales", icon: DollarSign, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
+  { name: "Transactions", href: "/transactions", icon: FileText, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
+  { name: "Reports", href: "/reports", icon: BarChart3, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
   { name: "Users", href: "/users", icon: Users, roles: ['admin', 'manager'] },
   { name: "Roles", href: "/roles", icon: Shield, roles: ['admin', 'manager'] },
   { name: "Offers", href: "/offers", icon: Tag, roles: ['admin', 'manager', 'marketing_manager'] },

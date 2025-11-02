@@ -60,10 +60,11 @@ export default function Transactions() {
         .select("*")
         .order("transaction_date", { ascending: false });
 
-      // If cashier, only show their own transactions
+      // Cashiers only see their own transactions, managers see all
       if (role === 'cashier') {
         query = query.eq("cashier_id", user?.id);
       }
+      // stock_manager and marketing_manager see all transactions
 
       const { data, error } = await query;
 
@@ -109,7 +110,10 @@ export default function Transactions() {
       <div>
         <h1 className="text-3xl font-bold">Transactions</h1>
         <p className="text-muted-foreground">
-          {role === 'cashier' ? "Your transaction history" : "All payment transactions"}
+          {role === 'cashier' ? "Your transaction history" : 
+           role === 'stock_manager' ? "All transaction records" :
+           role === 'marketing_manager' ? "Sales transaction data" :
+           "All payment transactions"}
         </p>
       </div>
 

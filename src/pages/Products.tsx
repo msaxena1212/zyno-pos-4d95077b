@@ -113,10 +113,10 @@ export default function Products() {
         <div>
           <h1 className="text-3xl font-bold">Product Catalog</h1>
           <p className="text-muted-foreground">
-            {role === 'cashier' ? 'View products and prices' : 'Manage products and inventory'}
+            {(role === 'cashier' || role === 'stock_manager' || role === 'marketing_manager') ? 'View products and prices' : 'Manage products and inventory'}
           </p>
         </div>
-        {role !== 'cashier' && (
+        {(role !== 'cashier' && role !== 'stock_manager' && role !== 'marketing_manager') && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
