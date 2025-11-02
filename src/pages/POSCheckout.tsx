@@ -27,10 +27,21 @@ interface CartItem {
   discount: number;
 }
 
+interface Customer {
+  id: string;
+  customer_number: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+}
+
 export default function POSCheckout() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountReceived, setAmountReceived] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -41,6 +52,7 @@ export default function POSCheckout() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCustomers();
   }, [currentBrand]);
 
   const fetchProducts = async () => {
@@ -55,6 +67,21 @@ export default function POSCheckout() {
       setProducts(data || []);
     } catch (error: any) {
       toast.error("Failed to load products");
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, customer_number, first_name, last_name, phone")
+        .eq("status", "active")
+        .order("first_name");
+
+      if (error) throw error;
+      setCustomers(data || []);
+    } catch (error: any) {
+      toast.error("Failed to load customers");
     }
   };
 
@@ -118,6 +145,11 @@ export default function POSCheckout() {
       return;
     }
 
+    if (!selectedCustomer) {
+      toast.error("Please select a customer");
+      return;
+    }
+
     if (paymentMethod === "cash") {
       const received = parseFloat(amountReceived) || 0;
       if (received < calculateTotal()) {
@@ -136,6 +168,7 @@ export default function POSCheckout() {
         transaction_number: txnData,
         brand_id: currentBrand?.id,
         cashier_id: user?.id,
+        customer_id: selectedCustomer,
         subtotal: calculateSubtotal(),
         discount_amount: calculateDiscount(),
         tax_amount: calculateTax(),
@@ -207,6 +240,7 @@ export default function POSCheckout() {
 
       toast.success(`Transaction completed! Receipt #${txnData}`);
       setCart([]);
+      setSelectedCustomer("");
       setAmountReceived("");
       setPaymentMethod("cash");
     } catch (error: any) {
@@ -220,6 +254,13 @@ export default function POSCheckout() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCustomers = customers.filter(c =>
+    c.first_name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    c.last_name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    c.phone.includes(customerSearch) ||
+    c.customer_number.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
   return (
@@ -310,6 +351,45 @@ export default function POSCheckout() {
       </div>
 
       <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Customer *</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, phone, or customer #..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {customerSearch && (
+                <div className="border rounded-md max-h-48 overflow-y-auto">
+                  {filteredCustomers.map((customer) => (
+                    <div
+                      key={customer.id}
+                      className={`p-3 hover:bg-accent cursor-pointer border-b last:border-0 ${
+                        selectedCustomer === customer.id ? 'bg-accent' : ''
+                      }`}
+                      onClick={() => {
+                        setSelectedCustomer(customer.id);
+                        setCustomerSearch(`${customer.first_name} ${customer.last_name} (${customer.phone})`);
+                      }}
+                    >
+                      <p className="font-medium">{customer.first_name} {customer.last_name}</p>
+                      <p className="text-sm text-muted-foreground">{customer.phone} • {customer.customer_number}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Order Summary</CardTitle>

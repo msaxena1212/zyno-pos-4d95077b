@@ -10,12 +10,15 @@ import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import POSCheckout from "./pages/POSCheckout";
-import Inventory from "./pages/Inventory";
 import Users from "./pages/Users";
 import Roles from "./pages/Roles";
 import Offers from "./pages/Offers";
 import Workflows from "./pages/Workflows";
 import Products from "./pages/Products";
+import Customers from "./pages/Customers";
+import Sales from "./pages/Sales";
+import Transactions from "./pages/Transactions";
+import Reports from "./pages/Reports";
 import SeedUsers from "./pages/SeedUsers";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -38,16 +41,14 @@ const App = () => (
                 <Route path="/pos" element={<POS />} />
                 <Route path="/pos-checkout" element={<POSCheckout />} />
                 <Route path="/products" element={<Products />} />
-                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/sales" element={<Sales />} />
+                <Route path="/transactions" element={<Transactions />} />
+                <Route path="/reports" element={<Reports />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/roles" element={<Roles />} />
                 <Route path="/offers" element={<Offers />} />
                 <Route path="/workflows" element={<Workflows />} />
-                <Route path="/customers" element={<Dashboard />} />
-                <Route path="/reports" element={<Dashboard />} />
-                <Route path="/sales" element={<Dashboard />} />
-                <Route path="/transactions" element={<Dashboard />} />
-                <Route path="/settings" element={<Dashboard />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

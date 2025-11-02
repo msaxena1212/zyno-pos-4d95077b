@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useBrand } from "@/contexts/BrandContext";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Product {
   id: string;
@@ -38,6 +39,7 @@ export default function Products() {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { currentBrand } = useBrand();
+  const { role } = useUserRole();
   const form = useForm();
 
   useEffect(() => {
@@ -110,15 +112,18 @@ export default function Products() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Product Catalog</h1>
-          <p className="text-muted-foreground">Manage products and inventory</p>
+          <p className="text-muted-foreground">
+            {role === 'cashier' ? 'View products and prices' : 'Manage products and inventory'}
+          </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+        {role !== 'cashier' && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
@@ -263,6 +268,7 @@ export default function Products() {
             </Form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
