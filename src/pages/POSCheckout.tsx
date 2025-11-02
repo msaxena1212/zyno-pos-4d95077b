@@ -418,15 +418,13 @@ export default function POSCheckout() {
                   className="pl-10"
                 />
               </div>
-              {customerSearch && (
+              {customerSearch && !selectedCustomer && (
                 <div className="border rounded-md max-h-48 overflow-y-auto">
                   {filteredCustomers.length > 0 ? (
                     filteredCustomers.map((customer) => (
                       <div
                         key={customer.id}
-                        className={`p-3 hover:bg-accent cursor-pointer border-b last:border-0 ${
-                          selectedCustomer === customer.id ? 'bg-accent' : ''
-                        }`}
+                        className="p-3 hover:bg-accent cursor-pointer border-b last:border-0"
                         onClick={() => {
                           setSelectedCustomer(customer.id);
                           setCustomerSearch(`${customer.first_name} ${customer.last_name} (${customer.phone})`);
@@ -449,6 +447,14 @@ export default function POSCheckout() {
                       </Button>
                     </div>
                   )}
+                </div>
+              )}
+              {selectedCustomer && (
+                <div className="mt-2">
+                  <div className="p-3 bg-accent/50 rounded-md border">
+                    <p className="text-sm font-medium">Selected Customer</p>
+                    <p className="text-sm text-muted-foreground">{customerSearch}</p>
+                  </div>
                 </div>
               )}
             </div>

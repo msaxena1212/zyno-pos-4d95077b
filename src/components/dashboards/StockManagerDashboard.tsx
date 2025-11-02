@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
 
 interface InventoryStats {
   totalProducts: number;
@@ -29,6 +30,7 @@ export function StockManagerDashboard() {
     totalValue: 0,
   });
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,6 +64,20 @@ export function StockManagerDashboard() {
           quantity: item.quantity_on_hand,
           status: item.quantity_on_hand === 0 ? 'out' : item.quantity_on_hand <= item.reorder_point ? 'low' : 'ok'
         }));
+
+      // Get category distribution
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, product_categories(name)");
+
+      const catMap = new Map();
+      products?.forEach(product => {
+        const catName = product.product_categories?.name || 'Uncategorized';
+        catMap.set(catName, (catMap.get(catName) || 0) + 1);
+      });
+
+      const catData = Array.from(catMap.entries()).map(([name, count]) => ({ name, count }));
+      setCategoryData(catData);
 
       setStats({ totalProducts, lowStock, outOfStock, totalValue });
       setTopProducts(sortedProducts);
@@ -214,21 +230,30 @@ export function StockManagerDashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Reorder Alerts</CardTitle>
-            <CardDescription>Products that need restocking</CardDescription>
+            <CardTitle>Category Distribution</CardTitle>
+            <CardDescription>Products by category</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
-              <p className="text-2xl font-bold">{stats.lowStock}</p>
-              <p className="text-sm text-muted-foreground">Products below reorder point</p>
-              <button 
-                className="mt-4 text-sm text-primary hover:underline"
-                onClick={() => navigate('/products')}
-              >
-                View All Products
-              </button>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={categoryData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" className="text-xs" angle={-45} textAnchor="end" height={80} />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)"
+                  }}
+                  formatter={(value: any) => [value, 'Products']}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={`hsl(${(index * 60) % 360}, 70%, 50%)`} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -270,6 +295,23 @@ export function StockManagerDashboard() {
                   <p className="text-xs text-muted-foreground">
                     {stockHealthPercentage.toFixed(0)}% of products are adequately stocked
                   </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">Urgent Restocking</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.lowStock} items need immediate reordering
+                  </p>
+                  <button 
+                    className="mt-2 text-xs text-primary hover:underline"
+                    onClick={() => navigate('/products')}
+                  >
+                    View Low Stock Items →
+                  </button>
                 </div>
               </div>
             </div>

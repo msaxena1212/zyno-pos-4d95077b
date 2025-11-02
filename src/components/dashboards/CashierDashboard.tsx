@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, Clock, CheckCircle2, TrendingUp } from "lucide-react";
+import { DollarSign, ShoppingCart, Clock, CheckCircle2, TrendingUp, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Bar, BarChart } from "recharts";
 
 export function CashierDashboard() {
   const navigate = useNavigate();
@@ -16,10 +17,14 @@ export function CashierDashboard() {
     completedTransactions: 0,
     averageTransaction: 0,
   });
+  const [hourlyData, setHourlyData] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
+    fetchHourlyData();
+    fetchTopProducts();
   }, [user]);
 
   const fetchStats = async () => {
@@ -50,6 +55,65 @@ export function CashierDashboard() {
       toast.error("Failed to fetch statistics");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHourlyData = async () => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data: transactions } = await supabase
+        .from("pos_transactions")
+        .select("transaction_date, total_amount")
+        .eq("cashier_id", user?.id)
+        .gte("transaction_date", today.toISOString());
+
+      const hourlyMap = new Map();
+      for (let i = 0; i < 24; i++) {
+        hourlyMap.set(i, { hour: `${i}:00`, sales: 0, count: 0 });
+      }
+
+      transactions?.forEach(txn => {
+        const hour = new Date(txn.transaction_date).getHours();
+        const current = hourlyMap.get(hour);
+        if (current) {
+          current.sales += parseFloat(txn.total_amount.toString());
+          current.count += 1;
+        }
+      });
+
+      setHourlyData(Array.from(hourlyMap.values()).filter(h => h.count > 0));
+    } catch (error) {
+      console.error("Failed to fetch hourly data", error);
+    }
+  };
+
+  const fetchTopProducts = async () => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: items } = await supabase
+        .from("pos_transaction_items")
+        .select("product_id, quantity, products(name)")
+        .gte("created_at", today.toISOString());
+
+      const productMap = new Map();
+      items?.forEach(item => {
+        const name = item.products?.name || 'Unknown';
+        const current = productMap.get(name) || 0;
+        productMap.set(name, current + item.quantity);
+      });
+
+      const sorted = Array.from(productMap.entries())
+        .map(([name, quantity]) => ({ name, quantity }))
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5);
+
+      setTopProducts(sorted);
+    } catch (error) {
+      console.error("Failed to fetch top products", error);
     }
   };
 
@@ -129,49 +193,82 @@ export function CashierDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Performance Chart</CardTitle>
-            <CardDescription>Your sales performance today</CardDescription>
+            <CardTitle>Top Products Today</CardTitle>
+            <CardDescription>Most sold items in your shift</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Sales Target Progress</span>
-                  <span className="font-medium">
-                    {stats.todayTransactions > 0 ? Math.min(100, (stats.todayTransactions / 50) * 100).toFixed(0) : 0}%
-                  </span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (stats.todayTransactions / 50) * 100)}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Revenue Target</span>
-                  <span className="font-medium">
-                    {stats.todaySales > 0 ? Math.min(100, (stats.todaySales / 50000) * 100).toFixed(0) : 0}%
-                  </span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (stats.todaySales / 50000) * 100)}%` }}
-                  />
-                </div>
-              </div>
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">Keep up the great work!</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Target: 50 transactions or ₹50,000 per day
-                </p>
-              </div>
+            <div className="space-y-3">
+              {topProducts.length > 0 ? (
+                topProducts.map((product, index) => (
+                  <div key={index} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{product.name}</span>
+                    </div>
+                    <span className="font-semibold text-sm">{product.quantity} sold</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No sales yet today</p>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {hourlyData.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hourly Sales</CardTitle>
+              <CardDescription>Your sales performance throughout the day</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="hour" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)"
+                    }}
+                    formatter={(value: any) => [`₹${value.toFixed(0)}`, 'Sales']}
+                  />
+                  <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Transactions per Hour</CardTitle>
+              <CardDescription>Transaction volume distribution</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="hour" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)"
+                    }}
+                    formatter={(value: any) => [value, 'Transactions']}
+                  />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { Pie, PieChart, Cell, ResponsiveContainer, Legend, Tooltip, Bar, BarChart, XAxis, YAxis, CartesianGrid } from "recharts";
+
+const COLORS = ['hsl(var(--primary))', 'hsl(142, 76%, 36%)', 'hsl(48, 96%, 53%)', 'hsl(0, 84%, 60%)'];
 
 export function MarketingDashboard() {
   const navigate = useNavigate();
@@ -16,6 +19,8 @@ export function MarketingDashboard() {
     totalCustomers: 0,
     totalSales: 0,
   });
+  const [offerTypeData, setOfferTypeData] = useState<any[]>([]);
+  const [topOffers, setTopOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +39,21 @@ export function MarketingDashboard() {
       const activeOffers = offers?.filter(o => o.status === 'active').length || 0;
       const totalOffers = offers?.length || 0;
       const offerUsage = offers?.reduce((sum, o) => sum + (o.current_usage_count || 0), 0) || 0;
+
+      // Group offers by type
+      const typeMap = new Map();
+      offers?.forEach(offer => {
+        const type = offer.type || 'other';
+        typeMap.set(type, (typeMap.get(type) || 0) + 1);
+      });
+      setOfferTypeData(Array.from(typeMap.entries()).map(([name, value]) => ({ name, value })));
+
+      // Get top performing offers
+      const sortedOffers = [...(offers || [])]
+        .sort((a, b) => (b.current_usage_count || 0) - (a.current_usage_count || 0))
+        .slice(0, 5)
+        .map(o => ({ name: o.name, usage: o.current_usage_count || 0 }));
+      setTopOffers(sortedOffers);
 
       // Fetch customers count
       const { count: customerCount } = await supabase
@@ -168,6 +188,67 @@ export function MarketingDashboard() {
                 <p className="text-xs text-muted-foreground">Used</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Offer Types Distribution</CardTitle>
+            <CardDescription>Campaign types breakdown</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={offerTypeData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label
+                >
+                  {offerTypeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)"
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Performing Offers</CardTitle>
+            <CardDescription>Most redeemed campaigns</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topOffers} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis type="number" className="text-xs" />
+                <YAxis dataKey="name" type="category" width={100} className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)"
+                  }}
+                  formatter={(value: any) => [value, 'Redemptions']}
+                />
+                <Bar dataKey="usage" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
