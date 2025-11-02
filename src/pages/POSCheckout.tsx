@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBrand } from "@/contexts/BrandContext";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PaymentGateway } from "@/components/PaymentGateway";
 
 interface Product {
   id: string;
@@ -48,6 +49,7 @@ export default function POSCheckout() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [paymentGatewayOpen, setPaymentGatewayOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     first_name: "",
     last_name: "",
@@ -146,7 +148,7 @@ export default function POSCheckout() {
     return Math.max(0, received - calculateTotal());
   };
 
-  const processTransaction = async () => {
+  const initiatePayment = () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
       return;
@@ -163,7 +165,15 @@ export default function POSCheckout() {
         toast.error("Insufficient payment amount");
         return;
       }
+      processTransaction();
+    } else if (paymentMethod === "card" || paymentMethod === "upi" || paymentMethod === "digital_wallet") {
+      setPaymentGatewayOpen(true);
+    } else {
+      processTransaction();
     }
+  };
+
+  const processTransaction = async () => {
 
     setProcessing(true);
     try {
@@ -504,8 +514,18 @@ export default function POSCheckout() {
                       Card
                     </div>
                   </SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="wallet">Digital Wallet</SelectItem>
+                  <SelectItem value="upi">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      UPI
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="digital_wallet">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Digital Wallet
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -529,7 +549,7 @@ export default function POSCheckout() {
             )}
 
             <Button
-              onClick={processTransaction}
+              onClick={initiatePayment}
               disabled={processing || cart.length === 0}
               className="w-full"
               size="lg"
@@ -649,6 +669,14 @@ export default function POSCheckout() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PaymentGateway
+        open={paymentGatewayOpen}
+        onClose={() => setPaymentGatewayOpen(false)}
+        paymentMethod={paymentMethod as "card" | "upi" | "digital_wallet"}
+        amount={calculateTotal()}
+        onSuccess={processTransaction}
+      />
     </div>
   );
 }
