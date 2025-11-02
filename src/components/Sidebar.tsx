@@ -1,17 +1,19 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Package, Users, FileText, Settings, BarChart3, DollarSign } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, FileText, Settings, BarChart3, DollarSign, Shield, Tag, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "POS", href: "/pos", icon: ShoppingCart },
   { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Users", href: "/users", icon: Users },
+  { name: "Roles", href: "/roles", icon: Shield },
+  { name: "Offers", href: "/offers", icon: Tag },
+  { name: "Workflows", href: "/workflows", icon: Workflow },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Sales", href: "/sales", icon: DollarSign },
   { name: "Transactions", href: "/transactions", icon: FileText },
-  { name: "Users", href: "/users", icon: Users },
-  { name: "Roles", href: "/roles", icon: Settings },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

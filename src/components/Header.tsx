@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BrandSwitcher } from "@/components/BrandSwitcher";
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -10,8 +11,9 @@ export function Header() {
   return (
     <header className="fixed top-0 left-64 right-0 h-16 bg-card border-b border-border z-10">
       <div className="flex items-center justify-between h-full px-6">
-        <div className="flex items-center gap-4 flex-1 max-w-md">
-          <div className="relative flex-1">
+        <div className="flex items-center gap-4 flex-1">
+          <BrandSwitcher />
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search products, customers..."
