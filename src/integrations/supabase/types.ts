@@ -583,7 +583,7 @@ export type Database = {
             foreignKeyName: "pos_transactions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
