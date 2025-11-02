@@ -87,13 +87,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error && error.message !== 'Auth session missing!') {
+        throw error;
+      }
+      
+      // Clear local state even if session was already invalid
+      setSession(null);
+      setUser(null);
       
       toast.success("Signed out successfully");
       navigate("/auth");
     } catch (error: any) {
+      // Still navigate to auth page even if signout fails
+      setSession(null);
+      setUser(null);
+      navigate("/auth");
       toast.error(error.message || "Failed to sign out");
-      throw error;
     }
   };
 
