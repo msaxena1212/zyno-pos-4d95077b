@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Search, Receipt } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Search, Receipt, Package } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrand } from "@/contexts/BrandContext";
 import { Badge } from "@/components/ui/badge";
@@ -280,21 +280,32 @@ export default function POSCheckout() {
                 className="pl-10"
               />
             </div>
-            {searchQuery && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                {filteredProducts.map((product) => (
-                  <Button
-                    key={product.id}
-                    variant="outline"
-                    className="h-auto py-3 flex flex-col items-start"
-                    onClick={() => addToCart(product)}
-                  >
-                    <span className="font-semibold">{product.name}</span>
-                    <span className="text-sm text-muted-foreground">₹{product.unit_price.toFixed(2)}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto p-2">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="border rounded-lg p-3 hover:bg-accent hover:border-primary cursor-pointer transition-all duration-200 flex flex-col"
+                  onClick={() => addToCart(product)}
+                >
+                  <div className="flex items-center justify-center h-20 mb-2 bg-secondary/20 rounded">
+                    <Package className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm line-clamp-2">{product.name}</p>
+                    <p className="text-xs text-muted-foreground">{product.sku}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-lg font-bold text-primary">₹{product.unit_price.toFixed(2)}</p>
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredProducts.length === 0 && (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  No products found
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
