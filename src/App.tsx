@@ -14,6 +14,7 @@ import Users from "./pages/Users";
 import Roles from "./pages/Roles";
 import Offers from "./pages/Offers";
 import Workflows from "./pages/Workflows";
+import SeedUsers from "./pages/SeedUsers";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
           <BrandProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/seed-users" element={<SeedUsers />} />
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/pos" element={<POS />} />
