@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useBrand } from "@/contexts/BrandContext";
+import { Pagination } from "@/components/Pagination";
 
 interface Customer {
   id: string;
@@ -31,6 +32,8 @@ export default function Customers() {
   const [open, setOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const { currentBrand } = useBrand();
   const form = useForm();
 
@@ -120,6 +123,12 @@ export default function Customers() {
     customer.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.phone.includes(searchQuery) ||
     customer.customer_number.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   if (loading) {
@@ -335,7 +344,7 @@ export default function Customers() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {paginatedCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-mono text-sm">{customer.customer_number}</TableCell>
                   <TableCell className="font-medium">
@@ -372,6 +381,13 @@ export default function Customers() {
               ))}
             </TableBody>
           </Table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredCustomers.length}
+          />
         </CardContent>
       </Card>
     </div>

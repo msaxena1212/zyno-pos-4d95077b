@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useBrand } from "@/contexts/BrandContext";
+import { Pagination } from "@/components/Pagination";
 
 interface Offer {
   id: string;
@@ -33,6 +34,8 @@ const Offers = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const { currentBrand } = useBrand();
   const form = useForm();
 
@@ -148,6 +151,12 @@ const Offers = () => {
       toast.error(error.message || "Failed to update offer status");
     }
   };
+
+  const totalPages = Math.ceil(offers.length / itemsPerPage);
+  const paginatedOffers = offers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return <div className="p-6">Loading...</div>;
@@ -304,7 +313,7 @@ const Offers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {offers.map((offer) => (
+              {paginatedOffers.map((offer) => (
                 <TableRow key={offer.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
@@ -362,6 +371,13 @@ const Offers = () => {
               ))}
             </TableBody>
           </Table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={offers.length}
+          />
         </CardContent>
       </Card>
     </div>

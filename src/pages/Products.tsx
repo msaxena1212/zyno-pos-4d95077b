@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Package, Search } from "lucide-react";
+import { Plus, Package, Search, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useBrand } from "@/contexts/BrandContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Pagination } from "@/components/Pagination";
 
 interface Product {
   id: string;
@@ -27,6 +28,10 @@ interface Product {
   description: string | null;
   cost_price: number | null;
   tax_rate: number;
+  inventory?: {
+    quantity_on_hand: number;
+    reorder_point: number;
+  }[];
 }
 
 interface Category {
@@ -42,6 +47,8 @@ export default function Products() {
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const { currentBrand } = useBrand();
   const { role } = useUserRole();
   const form = useForm();
@@ -53,7 +60,7 @@ export default function Products() {
   const fetchData = async () => {
     try {
       const [productsRes, categoriesRes] = await Promise.all([
-        supabase.from("products").select("*, product_categories(name)").order("name"),
+        supabase.from("products").select("*, product_categories(name), inventory(quantity_on_hand, reorder_point)").order("name"),
         supabase.from("product_categories").select("*").eq("status", "active").order("name")
       ]);
 
@@ -160,6 +167,20 @@ export default function Products() {
     product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const getStockStatus = (product: Product) => {
+    const inventory = product.inventory?.[0];
+    if (!inventory) return { status: "Unknown", variant: "secondary" as const };
+    if (inventory.quantity_on_hand === 0) return { status: "Out of Stock", variant: "destructive" as const };
+    if (inventory.quantity_on_hand <= inventory.reorder_point) return { status: "Low Stock", variant: "secondary" as const };
+    return { status: "In Stock", variant: "default" as const };
+  };
 
   if (loading) {
     return <div className="p-6">Loading...</div>;
@@ -366,12 +387,15 @@ export default function Products() {
                 <TableHead>Category</TableHead>
                 <TableHead>Barcode</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Stock Status</TableHead>
                 <TableHead>Status</TableHead>
                 {role !== 'cashier' && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {paginatedProducts.map((product) => {
+                const stockStatus = getStockStatus(product);
+                return (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.sku}</TableCell>
                   <TableCell>
@@ -383,6 +407,18 @@ export default function Products() {
                   <TableCell>{product.product_categories?.name || '-'}</TableCell>
                   <TableCell className="font-mono text-sm">{product.barcode || '-'}</TableCell>
                   <TableCell>₹{product.unit_price.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={stockStatus.variant}>
+                        {stockStatus.status}
+                      </Badge>
+                      {product.inventory?.[0] && (
+                        <span className="text-xs text-muted-foreground">
+                          ({product.inventory[0].quantity_on_hand} units)
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={product.status === "active" ? "default" : "secondary"}>
                       {product.status}
@@ -409,9 +445,17 @@ export default function Products() {
                     </TableCell>
                   )}
                 </TableRow>
-              ))}
+              );
+              })}
             </TableBody>
           </Table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredProducts.length}
+          />
         </CardContent>
       </Card>
     </div>

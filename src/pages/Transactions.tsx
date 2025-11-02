@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/Pagination";
 
 interface Transaction {
   id: string;
@@ -46,6 +47,8 @@ export default function Transactions() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [transactionItems, setTransactionItems] = useState<TransactionItem[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const { user } = useAuth();
   const { role } = useUserRole();
 
@@ -99,6 +102,12 @@ export default function Transactions() {
 
   const filteredTransactions = transactions.filter(txn =>
     txn.transaction_number.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   if (loading) {
@@ -196,7 +205,7 @@ export default function Transactions() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.map((txn) => (
+              {paginatedTransactions.map((txn) => (
                 <TableRow key={txn.id}>
                   <TableCell className="font-mono text-sm">{txn.transaction_number}</TableCell>
                   <TableCell>
@@ -231,6 +240,13 @@ export default function Transactions() {
               ))}
             </TableBody>
           </Table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredTransactions.length}
+          />
         </CardContent>
       </Card>
 
