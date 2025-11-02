@@ -331,6 +331,7 @@ export default function POSCheckout() {
         ...newTxn,
         items: cart,
         change: calculateChange(),
+        payment_method: paymentMethod,
       });
       setReceiptOpen(true);
 
@@ -346,6 +347,132 @@ export default function POSCheckout() {
       setProcessing(false);
       setPaymentGatewayOpen(false);
     }
+  };
+
+  const handleCloseReceipt = () => {
+    setReceiptOpen(false);
+    // Reset all form states
+    setCart([]);
+    setSelectedCustomer("");
+    setCustomerSearch("");
+    setAmountReceived("");
+    setPaymentMethod("cash");
+    setLastReceipt(null);
+    setSearchQuery("");
+    toast.info("Ready for next transaction");
+  };
+
+  const handlePrintReceipt = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow || !lastReceipt) return;
+
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Receipt #${lastReceipt.transaction_number}</title>
+        <style>
+          body {
+            font-family: 'Courier New', monospace;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+          }
+          .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+          }
+          .items {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 10px 0;
+            margin: 10px 0;
+          }
+          .total {
+            font-weight: bold;
+            font-size: 1.2em;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+            margin-top: 10px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+          }
+          @media print {
+            body { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>RetailPro POS</h2>
+          <p>Receipt #${lastReceipt.transaction_number}</p>
+          <p>${new Date(lastReceipt.transaction_date).toLocaleString()}</p>
+        </div>
+        
+        <div class="items">
+          ${lastReceipt.items.map((item: CartItem) => `
+            <div class="row">
+              <span>${item.product.name} ×${item.quantity}</span>
+              <span>₹${(item.product.unit_price * item.quantity).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="row">
+          <span>Subtotal:</span>
+          <span>₹${lastReceipt.subtotal.toFixed(2)}</span>
+        </div>
+        <div class="row">
+          <span>Tax:</span>
+          <span>₹${lastReceipt.tax_amount.toFixed(2)}</span>
+        </div>
+        <div class="row total">
+          <span>Total:</span>
+          <span>₹${lastReceipt.total_amount.toFixed(2)}</span>
+        </div>
+        
+        ${lastReceipt.payment_method === 'cash' ? `
+          <div class="row">
+            <span>Paid:</span>
+            <span>₹${lastReceipt.amount_paid.toFixed(2)}</span>
+          </div>
+          <div class="row">
+            <span>Change:</span>
+            <span>₹${lastReceipt.change.toFixed(2)}</span>
+          </div>
+        ` : `
+          <div class="row">
+            <span>Payment Method:</span>
+            <span>${lastReceipt.payment_method.toUpperCase()}</span>
+          </div>
+        `}
+        
+        <div class="footer">
+          <p>Thank you for shopping with us!</p>
+          <p>Visit again soon</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const filteredProducts = products.filter(p =>
@@ -642,57 +769,80 @@ export default function POSCheckout() {
         </Card>
       </div>
 
-      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
-        <DialogContent>
+      <Dialog open={receiptOpen} onOpenChange={(open) => !open && handleCloseReceipt()}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Transaction Receipt</DialogTitle>
             <DialogDescription>Transaction completed successfully</DialogDescription>
           </DialogHeader>
           {lastReceipt && (
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between">
-                <span>Receipt #:</span>
-                <span className="font-mono">{lastReceipt.transaction_number}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Date:</span>
-                <span>{new Date(lastReceipt.transaction_date).toLocaleString()}</span>
-              </div>
-              <div className="border-t pt-4">
-                {lastReceipt.items.map((item: CartItem) => (
-                  <div key={item.product.id} className="flex justify-between mb-2">
-                    <span>{item.product.name} ×{item.quantity}</span>
-                    <span>₹{(item.product.unit_price * item.quantity).toFixed(2)}</span>
+            <>
+              <div className="space-y-4 text-sm" id="receipt-content">
+                <div className="flex justify-between">
+                  <span>Receipt #:</span>
+                  <span className="font-mono">{lastReceipt.transaction_number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Date:</span>
+                  <span>{new Date(lastReceipt.transaction_date).toLocaleString()}</span>
+                </div>
+                <div className="border-t pt-4">
+                  {lastReceipt.items.map((item: CartItem) => (
+                    <div key={item.product.id} className="flex justify-between mb-2">
+                      <span>{item.product.name} ×{item.quantity}</span>
+                      <span>₹{(item.product.unit_price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>₹{lastReceipt.subtotal.toFixed(2)}</span>
                   </div>
-                ))}
-              </div>
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>₹{lastReceipt.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax:</span>
-                  <span>₹{lastReceipt.tax_amount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-base">
-                  <span>Total:</span>
-                  <span>₹{lastReceipt.total_amount.toFixed(2)}</span>
-                </div>
-                {paymentMethod === "cash" && (
-                  <>
+                  <div className="flex justify-between">
+                    <span>Tax:</span>
+                    <span>₹{lastReceipt.tax_amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-base">
+                    <span>Total:</span>
+                    <span>₹{lastReceipt.total_amount.toFixed(2)}</span>
+                  </div>
+                  {lastReceipt.payment_method === "cash" ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Paid:</span>
+                        <span>₹{lastReceipt.amount_paid.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Change:</span>
+                        <span>₹{lastReceipt.change.toFixed(2)}</span>
+                      </div>
+                    </>
+                  ) : (
                     <div className="flex justify-between">
-                      <span>Paid:</span>
-                      <span>₹{lastReceipt.amount_paid.toFixed(2)}</span>
+                      <span>Payment Method:</span>
+                      <span className="capitalize">{lastReceipt.payment_method.replace('_', ' ')}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Change:</span>
-                      <span>₹{lastReceipt.change.toFixed(2)}</span>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+              <div className="flex gap-3 mt-4">
+                <Button 
+                  onClick={handlePrintReceipt} 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Print Receipt
+                </Button>
+                <Button 
+                  onClick={handleCloseReceipt}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
