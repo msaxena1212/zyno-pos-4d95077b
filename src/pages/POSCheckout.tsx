@@ -47,6 +47,13 @@ export default function POSCheckout() {
   const [processing, setProcessing] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+    email: "",
+  });
   const { user } = useAuth();
   const { currentBrand } = useBrand();
 
@@ -263,6 +270,39 @@ export default function POSCheckout() {
     c.customer_number.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
+  const handleAddCustomer = async () => {
+    if (!newCustomer.first_name || !newCustomer.last_name || !newCustomer.phone) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      const { data: customerNumber } = await supabase.rpc('generate_customer_number');
+      
+      const { data, error } = await supabase
+        .from("customers")
+        .insert({
+          ...newCustomer,
+          customer_number: customerNumber,
+          brand_id: currentBrand?.id,
+          status: 'active',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Customer added successfully");
+      setCustomers([...customers, data]);
+      setSelectedCustomer(data.id);
+      setCustomerSearch(`${data.first_name} ${data.last_name} (${data.phone})`);
+      setAddCustomerOpen(false);
+      setNewCustomer({ first_name: "", last_name: "", phone: "", email: "" });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add customer");
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
@@ -380,21 +420,35 @@ export default function POSCheckout() {
               </div>
               {customerSearch && (
                 <div className="border rounded-md max-h-48 overflow-y-auto">
-                  {filteredCustomers.map((customer) => (
-                    <div
-                      key={customer.id}
-                      className={`p-3 hover:bg-accent cursor-pointer border-b last:border-0 ${
-                        selectedCustomer === customer.id ? 'bg-accent' : ''
-                      }`}
-                      onClick={() => {
-                        setSelectedCustomer(customer.id);
-                        setCustomerSearch(`${customer.first_name} ${customer.last_name} (${customer.phone})`);
-                      }}
-                    >
-                      <p className="font-medium">{customer.first_name} {customer.last_name}</p>
-                      <p className="text-sm text-muted-foreground">{customer.phone} • {customer.customer_number}</p>
+                  {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map((customer) => (
+                      <div
+                        key={customer.id}
+                        className={`p-3 hover:bg-accent cursor-pointer border-b last:border-0 ${
+                          selectedCustomer === customer.id ? 'bg-accent' : ''
+                        }`}
+                        onClick={() => {
+                          setSelectedCustomer(customer.id);
+                          setCustomerSearch(`${customer.first_name} ${customer.last_name} (${customer.phone})`);
+                        }}
+                      >
+                        <p className="font-medium">{customer.first_name} {customer.last_name}</p>
+                        <p className="text-sm text-muted-foreground">{customer.phone} • {customer.customer_number}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="text-sm text-muted-foreground mb-3">No customers found</p>
+                      <Button 
+                        onClick={() => setAddCustomerOpen(true)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add New Customer
+                      </Button>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
@@ -533,6 +587,60 @@ export default function POSCheckout() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addCustomerOpen} onOpenChange={setAddCustomerOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>Enter customer details to add them to the system</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>First Name *</Label>
+                <Input
+                  value={newCustomer.first_name}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, first_name: e.target.value })}
+                  placeholder="John"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name *</Label>
+                <Input
+                  value={newCustomer.last_name}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, last_name: e.target.value })}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Phone *</Label>
+              <Input
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                placeholder="+91 9876543210"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                placeholder="john.doe@example.com"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setAddCustomerOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddCustomer}>
+                Add Customer
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
