@@ -10,6 +10,8 @@ const navigation = [
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Sales", href: "/sales", icon: DollarSign },
   { name: "Transactions", href: "/transactions", icon: FileText },
+  { name: "Users", href: "/users", icon: Users },
+  { name: "Roles", href: "/roles", icon: Settings },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
