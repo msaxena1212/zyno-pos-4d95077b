@@ -196,7 +196,7 @@ export default function POSCheckout() {
       const transaction = {
         transaction_number: txnData,
         brand_id: currentBrand?.id,
-        cashier_id: session.user.id, // Use session.user.id instead of user?.id for RLS
+        cashier_id: session.user.id,
         customer_id: selectedCustomer,
         subtotal: calculateSubtotal(),
         discount_amount: calculateDiscount(),
@@ -206,7 +206,6 @@ export default function POSCheckout() {
         change_amount: calculateChange(),
         payment_status: 'completed',
         status: 'completed',
-        payment_method: paymentMethod,
       };
 
       const { data: newTxn, error: insertError } = await supabase
@@ -236,33 +235,70 @@ export default function POSCheckout() {
 
       if (itemsError) throw itemsError;
 
+      const paymentRecord = {
+        transaction_id: newTxn.id,
+        payment_method: paymentMethod,
+        amount: paymentMethod === "cash" ? parseFloat(amountReceived) : calculateTotal(),
+        payment_status: 'completed',
+        authorization_code: paymentDetails?.authCode || null,
+        card_last_four: paymentDetails?.cardLastFour || null,
+      };
+
       const { error: paymentError } = await supabase
         .from("payments")
-        .insert({
-          transaction_id: newTxn.id,
-          payment_method: paymentMethod,
-          amount: paymentMethod === "cash" ? parseFloat(amountReceived) : calculateTotal(),
-          payment_status: 'completed',
-          authorization_code: paymentDetails?.authCode,
-          card_last_four: paymentDetails?.cardLastFour,
-        });
+        .insert(paymentRecord);
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error("Payment insert error:", paymentError);
+        throw new Error(`Failed to create payment record: ${paymentError.message}`);
+      }
 
+      // Update inventory for each item
       for (const item of cart) {
-        const { data: invData } = await supabase
+        const { data: invData, error: invError } = await supabase
           .from('inventory')
-          .select('quantity_on_hand')
+          .select('quantity_on_hand, id')
           .eq('product_id', item.product.id)
-          .single();
+          .maybeSingle();
         
-        if (invData) {
-          await supabase
+        if (invData && !invError) {
+          const newQuantity = Math.max(0, invData.quantity_on_hand - item.quantity);
+          const { error: updateError } = await supabase
             .from('inventory')
             .update({
-              quantity_on_hand: invData.quantity_on_hand - item.quantity
+              quantity_on_hand: newQuantity,
+              updated_at: new Date().toISOString()
             })
-            .eq('product_id', item.product.id);
+            .eq('id', invData.id);
+          
+          if (updateError) {
+            console.warn(`Failed to update inventory for product ${item.product.id}:`, updateError);
+          }
+        }
+      }
+
+      // Update customer's last purchase date and total purchases
+      if (selectedCustomer) {
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('total_purchases')
+          .eq('id', selectedCustomer)
+          .maybeSingle();
+        
+        const currentTotal = customerData?.total_purchases || 0;
+        const newTotal = parseFloat(currentTotal.toString()) + calculateTotal();
+        
+        const { error: customerUpdateError } = await supabase
+          .from('customers')
+          .update({
+            last_purchase_date: new Date().toISOString(),
+            total_purchases: newTotal,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedCustomer);
+        
+        if (customerUpdateError) {
+          console.warn('Failed to update customer info:', customerUpdateError);
         }
       }
 
