@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "POS", href: "/pos", icon: ShoppingCart },
+  { name: "POS Checkout", href: "/pos-checkout", icon: ShoppingCart },
+  { name: "Products", href: "/products", icon: Package },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Users", href: "/users", icon: Users },
   { name: "Roles", href: "/roles", icon: Shield },

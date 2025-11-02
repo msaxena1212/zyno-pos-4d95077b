@@ -9,11 +9,13 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
+import POSCheckout from "./pages/POSCheckout";
 import Inventory from "./pages/Inventory";
 import Users from "./pages/Users";
 import Roles from "./pages/Roles";
 import Offers from "./pages/Offers";
 import Workflows from "./pages/Workflows";
+import Products from "./pages/Products";
 import SeedUsers from "./pages/SeedUsers";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -34,6 +36,8 @@ const App = () => (
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/pos" element={<POS />} />
+                <Route path="/pos-checkout" element={<POSCheckout />} />
+                <Route path="/products" element={<Products />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/roles" element={<Roles />} />

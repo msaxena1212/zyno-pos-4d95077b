@@ -884,6 +884,10 @@ export type Database = {
     Functions: {
       generate_transaction_number: { Args: never; Returns: string }
       get_user_role: { Args: { user_uuid: string }; Returns: string }
+      update_inventory_quantity: {
+        Args: { p_product_id: string; p_quantity_change: number }
+        Returns: undefined
+      }
       user_has_permission: {
         Args: { perm_code: string; user_uuid: string }
         Returns: boolean

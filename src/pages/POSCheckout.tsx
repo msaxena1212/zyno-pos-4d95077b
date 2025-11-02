@@ -182,10 +182,20 @@ export default function POSCheckout() {
       if (paymentError) throw paymentError;
 
       for (const item of cart) {
-        await supabase.rpc('update_inventory_quantity', {
-          p_product_id: item.product.id,
-          p_quantity_change: -item.quantity
-        });
+        const { data: invData } = await supabase
+          .from('inventory')
+          .select('quantity_on_hand')
+          .eq('product_id', item.product.id)
+          .single();
+        
+        if (invData) {
+          await supabase
+            .from('inventory')
+            .update({
+              quantity_on_hand: invData.quantity_on_hand - item.quantity
+            })
+            .eq('product_id', item.product.id);
+        }
       }
 
       setLastReceipt({

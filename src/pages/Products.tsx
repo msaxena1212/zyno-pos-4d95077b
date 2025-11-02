@@ -112,7 +112,7 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Product Catalog</h1>
           <p className="text-muted-foreground">Manage products and inventory</p>
         </div>
-        <Dialog open={open} onValueChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
