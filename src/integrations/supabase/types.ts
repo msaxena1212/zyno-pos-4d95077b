@@ -97,6 +97,83 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          address: string | null
+          brand_id: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          customer_number: string
+          date_of_birth: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          last_purchase_date: string | null
+          loyalty_points: number | null
+          notes: string | null
+          phone: string
+          postal_code: string | null
+          state: string | null
+          status: string | null
+          total_purchases: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          brand_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          customer_number: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          last_purchase_date?: string | null
+          loyalty_points?: number | null
+          notes?: string | null
+          phone: string
+          postal_code?: string | null
+          state?: string | null
+          status?: string | null
+          total_purchases?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          brand_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          customer_number?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          last_purchase_date?: string | null
+          loyalty_points?: number | null
+          notes?: string | null
+          phone?: string
+          postal_code?: string | null
+          state?: string | null
+          status?: string | null
+          total_purchases?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gift_cards: {
         Row: {
           card_number: string
@@ -882,6 +959,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_customer_number: { Args: never; Returns: string }
       generate_transaction_number: { Args: never; Returns: string }
       get_user_role: { Args: { user_uuid: string }; Returns: string }
       update_inventory_quantity: {
