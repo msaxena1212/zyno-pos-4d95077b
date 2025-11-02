@@ -186,6 +186,29 @@ export default function POSCheckout() {
       
       if (sessionError || !session) {
         toast.error("Session expired. Please log in again.");
+        setProcessing(false);
+        return;
+      }
+
+      console.log("Session user ID:", session.user.id);
+      console.log("Context user ID:", user.id);
+
+      // Verify user role
+      const { data: userRole, error: roleError } = await supabase.rpc('get_user_role', { 
+        user_uuid: session.user.id 
+      });
+
+      console.log("User role:", userRole, "Role error:", roleError);
+
+      if (roleError || !userRole) {
+        toast.error("Unable to verify user permissions. Please contact support.");
+        setProcessing(false);
+        return;
+      }
+
+      if (!['admin', 'manager', 'cashier'].includes(userRole)) {
+        toast.error("You don't have permission to create transactions.");
+        setProcessing(false);
         return;
       }
 
@@ -195,9 +218,9 @@ export default function POSCheckout() {
 
       const transaction = {
         transaction_number: txnData,
-        brand_id: currentBrand?.id,
+        brand_id: currentBrand?.id || null,
         cashier_id: session.user.id,
-        customer_id: selectedCustomer,
+        customer_id: selectedCustomer || null,
         subtotal: calculateSubtotal(),
         discount_amount: calculateDiscount(),
         tax_amount: calculateTax(),
@@ -207,6 +230,8 @@ export default function POSCheckout() {
         payment_status: 'completed',
         status: 'completed',
       };
+
+      console.log("Transaction data:", transaction);
 
       const { data: newTxn, error: insertError } = await supabase
         .from("pos_transactions")
