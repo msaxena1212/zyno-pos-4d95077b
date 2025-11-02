@@ -11,7 +11,7 @@ interface PaymentGatewayProps {
   onClose: () => void;
   paymentMethod: "card" | "upi" | "digital_wallet";
   amount: number;
-  onSuccess: () => void;
+  onSuccess: (paymentDetails?: { authCode?: string; cardLastFour?: string }) => void;
 }
 
 // Mock credentials for testing
@@ -52,8 +52,10 @@ export function PaymentGateway({ open, onClose, paymentMethod, amount, onSuccess
         cardDetails.cvv === MOCK_CARD.cvv &&
         cardDetails.expiry === MOCK_CARD.expiry
       ) {
+        const authCode = `AUTH${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+        const cardLastFour = cardDetails.number.slice(-4);
         toast.success("Card payment successful!");
-        onSuccess();
+        onSuccess({ authCode, cardLastFour });
         onClose();
       } else {
         toast.error("Invalid card details. Try: 4111111111111111, CVV: 123, Expiry: 12/25");
@@ -66,8 +68,9 @@ export function PaymentGateway({ open, onClose, paymentMethod, amount, onSuccess
     setProcessing(true);
     setTimeout(() => {
       if (upiId === MOCK_UPI.id) {
+        const authCode = `UPI${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
         toast.success("UPI payment successful!");
-        onSuccess();
+        onSuccess({ authCode });
         onClose();
       } else {
         toast.error("Invalid UPI ID. Try: test@upi");
@@ -83,8 +86,9 @@ export function PaymentGateway({ open, onClose, paymentMethod, amount, onSuccess
         walletDetails.phone === MOCK_WALLET.phone &&
         walletDetails.pin === MOCK_WALLET.pin
       ) {
+        const authCode = `WALLET${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
         toast.success("Digital wallet payment successful!");
-        onSuccess();
+        onSuccess({ authCode });
         onClose();
       } else {
         toast.error("Invalid wallet credentials. Try: Phone: 9876543210, PIN: 1234");

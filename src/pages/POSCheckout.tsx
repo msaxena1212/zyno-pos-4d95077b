@@ -173,10 +173,22 @@ export default function POSCheckout() {
     }
   };
 
-  const processTransaction = async () => {
+  const processTransaction = async (paymentDetails?: any) => {
+    if (!user?.id) {
+      toast.error("User not authenticated. Please log in again.");
+      return;
+    }
 
     setProcessing(true);
     try {
+      // Verify user session is still valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+
       const { data: txnData, error: txnError } = await supabase.rpc('generate_transaction_number');
       
       if (txnError) throw txnError;
@@ -184,7 +196,7 @@ export default function POSCheckout() {
       const transaction = {
         transaction_number: txnData,
         brand_id: currentBrand?.id,
-        cashier_id: user?.id,
+        cashier_id: session.user.id, // Use session.user.id instead of user?.id for RLS
         customer_id: selectedCustomer,
         subtotal: calculateSubtotal(),
         discount_amount: calculateDiscount(),
@@ -194,6 +206,7 @@ export default function POSCheckout() {
         change_amount: calculateChange(),
         payment_status: 'completed',
         status: 'completed',
+        payment_method: paymentMethod,
       };
 
       const { data: newTxn, error: insertError } = await supabase
@@ -202,7 +215,10 @@ export default function POSCheckout() {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Transaction insert error:", insertError);
+        throw new Error(`Failed to create transaction: ${insertError.message}`);
+      }
 
       const items = cart.map(item => ({
         transaction_id: newTxn.id,
@@ -227,6 +243,8 @@ export default function POSCheckout() {
           payment_method: paymentMethod,
           amount: paymentMethod === "cash" ? parseFloat(amountReceived) : calculateTotal(),
           payment_status: 'completed',
+          authorization_code: paymentDetails?.authCode,
+          card_last_four: paymentDetails?.cardLastFour,
         });
 
       if (paymentError) throw paymentError;
@@ -261,9 +279,11 @@ export default function POSCheckout() {
       setAmountReceived("");
       setPaymentMethod("cash");
     } catch (error: any) {
-      toast.error(error.message || "Transaction failed");
+      console.error("Transaction error:", error);
+      toast.error(error.message || "Transaction failed. Please try again.");
     } finally {
       setProcessing(false);
+      setPaymentGatewayOpen(false);
     }
   };
 
