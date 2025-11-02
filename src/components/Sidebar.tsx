@@ -11,10 +11,10 @@ const allNavigation = [
   { name: "Sales", href: "/sales", icon: DollarSign, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
   { name: "Transactions", href: "/transactions", icon: FileText, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
   { name: "Reports", href: "/reports", icon: BarChart3, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
-  { name: "Users", href: "/users", icon: Users, roles: ['admin', 'manager'] },
-  { name: "Roles", href: "/roles", icon: Shield, roles: ['admin', 'manager'] },
-  { name: "Offers", href: "/offers", icon: Tag, roles: ['admin', 'manager', 'marketing_manager'] },
-  { name: "Workflows", href: "/workflows", icon: Workflow, roles: ['admin', 'manager'] },
+  { name: "Users", href: "/users", icon: Users, roles: ['admin', 'manager', 'stock_manager', 'marketing_manager'] },
+  { name: "Roles", href: "/roles", icon: Shield, roles: ['admin', 'manager', 'stock_manager', 'marketing_manager'] },
+  { name: "Offers", href: "/offers", icon: Tag, roles: ['admin', 'manager', 'marketing_manager', 'stock_manager'] },
+  { name: "Workflows", href: "/workflows", icon: Workflow, roles: ['admin', 'manager', 'stock_manager', 'marketing_manager'] },
 ];
 
 export function Sidebar() {

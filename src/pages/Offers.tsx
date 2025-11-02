@@ -32,6 +32,7 @@ const Offers = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const { currentBrand } = useBrand();
   const form = useForm();
 
@@ -57,27 +58,94 @@ const Offers = () => {
 
   const onSubmit = async (values: any) => {
     try {
-      const { error } = await supabase.from("offers").insert({
-        name: values.name,
-        code: values.code,
-        description: values.description,
-        type: values.type,
-        discount_percentage: values.type === 'percentage' ? values.discount_value : null,
-        discount_value: values.type === 'fixed' ? values.discount_value : null,
-        start_date: values.start_date,
-        end_date: values.end_date,
-        brand_id: currentBrand?.id,
-        status: 'draft',
-      });
+      if (editingOffer) {
+        // Update existing offer
+        const { error } = await supabase.from("offers").update({
+          name: values.name,
+          code: values.code,
+          description: values.description,
+          type: values.type,
+          discount_percentage: values.type === 'percentage' ? values.discount_value : null,
+          discount_value: values.type === 'fixed' ? values.discount_value : null,
+          start_date: values.start_date,
+          end_date: values.end_date,
+        }).eq("id", editingOffer.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Offer updated successfully");
+      } else {
+        // Create new offer
+        const { error } = await supabase.from("offers").insert({
+          name: values.name,
+          code: values.code,
+          description: values.description,
+          type: values.type,
+          discount_percentage: values.type === 'percentage' ? values.discount_value : null,
+          discount_value: values.type === 'fixed' ? values.discount_value : null,
+          start_date: values.start_date,
+          end_date: values.end_date,
+          brand_id: currentBrand?.id,
+          status: 'draft',
+        });
 
-      toast.success("Offer created successfully");
+        if (error) throw error;
+        toast.success("Offer created successfully");
+      }
+
       setOpen(false);
+      setEditingOffer(null);
       form.reset();
       fetchOffers();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create offer");
+      toast.error(error.message || "Failed to save offer");
+    }
+  };
+
+  const handleEdit = (offer: Offer) => {
+    setEditingOffer(offer);
+    form.reset({
+      name: offer.name,
+      code: offer.code,
+      description: offer.description,
+      type: offer.type,
+      discount_value: offer.type === 'percentage' ? offer.discount_percentage : offer.discount_value,
+      start_date: offer.start_date ? offer.start_date.slice(0, 16) : '',
+      end_date: offer.end_date ? offer.end_date.slice(0, 16) : '',
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async (offerId: string) => {
+    if (!confirm("Are you sure you want to delete this offer?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("offers")
+        .delete()
+        .eq("id", offerId);
+
+      if (error) throw error;
+      toast.success("Offer deleted successfully");
+      fetchOffers();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete offer");
+    }
+  };
+
+  const toggleOfferStatus = async (offerId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'archived' : 'active';
+    
+    try {
+      const { error } = await supabase
+        .from("offers")
+        .update({ status: newStatus })
+        .eq("id", offerId);
+
+      if (error) throw error;
+      toast.success(`Offer ${newStatus === 'active' ? 'activated' : 'archived'} successfully`);
+      fetchOffers();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update offer status");
     }
   };
 
@@ -209,7 +277,9 @@ const Offers = () => {
                     )}
                   />
                 </div>
-                <Button type="submit" className="w-full">Create Offer</Button>
+                <Button type="submit" className="w-full">
+                  {editingOffer ? "Update Offer" : "Create Offer"}
+                </Button>
               </form>
             </Form>
           </DialogContent>
@@ -230,6 +300,7 @@ const Offers = () => {
                 <TableHead>Discount</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -248,7 +319,7 @@ const Offers = () => {
                   <TableCell>
                     {offer.type === 'percentage' 
                       ? `${offer.discount_percentage}%` 
-                      : `$${offer.discount_value}`}
+                      : `₹${offer.discount_value}`}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -257,13 +328,35 @@ const Offers = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={
-                      offer.status === "active" ? "default" : 
-                      offer.status === "draft" ? "secondary" : 
-                      "outline"
-                    }>
+                    <Badge 
+                      variant={
+                        offer.status === "active" ? "default" : 
+                        offer.status === "draft" ? "secondary" : 
+                        "outline"
+                      }
+                      className="cursor-pointer"
+                      onClick={() => toggleOfferStatus(offer.id, offer.status)}
+                    >
                       {offer.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(offer)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(offer.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -24,6 +24,9 @@ interface Product {
   status: string;
   category_id: string | null;
   product_categories: { name: string } | null;
+  description: string | null;
+  cost_price: number | null;
+  tax_rate: number;
 }
 
 interface Category {
@@ -37,6 +40,7 @@ export default function Products() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { currentBrand } = useBrand();
   const { role } = useUserRole();
@@ -67,33 +71,87 @@ export default function Products() {
 
   const onSubmit = async (values: any) => {
     try {
-      const { error } = await supabase.from("products").insert({
-        sku: values.sku,
-        barcode: values.barcode,
-        name: values.name,
-        description: values.description,
-        unit_price: parseFloat(values.unit_price),
-        cost_price: values.cost_price ? parseFloat(values.cost_price) : null,
-        tax_rate: parseFloat(values.tax_rate),
-        category_id: values.category_id,
-        brand_id: currentBrand?.id,
-        status: 'active',
-      });
+      if (editingProduct) {
+        // Update existing product
+        const { error } = await supabase.from("products").update({
+          sku: values.sku,
+          barcode: values.barcode,
+          name: values.name,
+          description: values.description,
+          unit_price: parseFloat(values.unit_price),
+          cost_price: values.cost_price ? parseFloat(values.cost_price) : null,
+          tax_rate: parseFloat(values.tax_rate),
+          category_id: values.category_id,
+        }).eq("id", editingProduct.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Product updated successfully");
+      } else {
+        // Create new product
+        const { data: newProduct, error } = await supabase.from("products").insert({
+          sku: values.sku,
+          barcode: values.barcode,
+          name: values.name,
+          description: values.description,
+          unit_price: parseFloat(values.unit_price),
+          cost_price: values.cost_price ? parseFloat(values.cost_price) : null,
+          tax_rate: parseFloat(values.tax_rate),
+          category_id: values.category_id,
+          brand_id: currentBrand?.id,
+          status: 'active',
+        }).select().single();
 
-      const { error: inventoryError } = await supabase.from("inventory").insert({
-        product_id: error ? null : (await supabase.from("products").select("id").eq("sku", values.sku).single()).data?.id,
-        quantity_on_hand: parseInt(values.initial_stock) || 0,
-        brand_id: currentBrand?.id,
-      });
+        if (error) throw error;
 
-      toast.success("Product created successfully");
+        // Create inventory entry for new product
+        const { error: inventoryError } = await supabase.from("inventory").insert({
+          product_id: newProduct.id,
+          quantity_on_hand: parseInt(values.initial_stock) || 0,
+          brand_id: currentBrand?.id,
+        });
+
+        if (inventoryError) throw inventoryError;
+        toast.success("Product created successfully");
+      }
+
       setOpen(false);
+      setEditingProduct(null);
       form.reset();
       fetchData();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create product");
+      toast.error(error.message || "Failed to save product");
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    form.reset({
+      sku: product.sku,
+      barcode: product.barcode,
+      name: product.name,
+      description: product.description,
+      unit_price: product.unit_price,
+      cost_price: product.cost_price,
+      tax_rate: product.tax_rate,
+      category_id: product.category_id,
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", productId);
+
+      if (error) throw error;
+      toast.success("Product deleted successfully");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete product");
     }
   };
 
@@ -113,22 +171,30 @@ export default function Products() {
         <div>
           <h1 className="text-3xl font-bold">Product Catalog</h1>
           <p className="text-muted-foreground">
-            {(role === 'cashier' || role === 'stock_manager' || role === 'marketing_manager') ? 'View products and prices' : 'Manage products and inventory'}
+            {role === 'cashier' ? 'View products and prices' : 'Manage products and inventory'}
           </p>
         </div>
-        {(role !== 'cashier' && role !== 'stock_manager' && role !== 'marketing_manager') && (
-          <Dialog open={open} onOpenChange={setOpen}>
+        {role !== 'cashier' && (
+          <Dialog open={open} onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) {
+              setEditingProduct(null);
+              form.reset();
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Product
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
-              <DialogDescription>Create a new product in the catalog</DialogDescription>
-            </DialogHeader>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+                <DialogDescription>
+                  {editingProduct ? "Update product information" : "Create a new product in the catalog"}
+                </DialogDescription>
+              </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -250,20 +316,24 @@ export default function Products() {
                     )}
                   />
                 </div>
-                <FormField
-                  control={form.control}
-                  name="initial_stock"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Initial Stock</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="100" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full">Create Product</Button>
+                {!editingProduct && (
+                  <FormField
+                    control={form.control}
+                    name="initial_stock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Initial Stock</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="100" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <Button type="submit" className="w-full">
+                  {editingProduct ? "Update Product" : "Create Product"}
+                </Button>
               </form>
             </Form>
           </DialogContent>
@@ -297,6 +367,7 @@ export default function Products() {
                 <TableHead>Barcode</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Status</TableHead>
+                {role !== 'cashier' && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -317,6 +388,26 @@ export default function Products() {
                       {product.status}
                     </Badge>
                   </TableCell>
+                  {role !== 'cashier' && (
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(product)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
