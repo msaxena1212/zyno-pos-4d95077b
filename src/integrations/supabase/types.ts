@@ -1003,6 +1003,275 @@ export type Database = {
         }
         Relationships: []
       }
+      return_disposition_codes: {
+        Row: {
+          active: boolean | null
+          affects_inventory: boolean | null
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          inventory_status: string | null
+          name: string
+        }
+        Insert: {
+          active?: boolean | null
+          affects_inventory?: boolean | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inventory_status?: string | null
+          name: string
+        }
+        Update: {
+          active?: boolean | null
+          affects_inventory?: boolean | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inventory_status?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      return_items: {
+        Row: {
+          created_at: string | null
+          discount_amount: number | null
+          disposition_code: string | null
+          id: string
+          inspected_by: string | null
+          inspection_date: string | null
+          line_total: number
+          lot_number: string | null
+          original_transaction_item_id: string | null
+          product_id: string
+          quality_notes: string | null
+          quantity_already_returned: number | null
+          quantity_purchased: number
+          quantity_returned: number
+          return_condition: string | null
+          return_reason_code: string | null
+          return_request_id: string
+          serial_number: string | null
+          tax_amount: number | null
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          discount_amount?: number | null
+          disposition_code?: string | null
+          id?: string
+          inspected_by?: string | null
+          inspection_date?: string | null
+          line_total: number
+          lot_number?: string | null
+          original_transaction_item_id?: string | null
+          product_id: string
+          quality_notes?: string | null
+          quantity_already_returned?: number | null
+          quantity_purchased: number
+          quantity_returned: number
+          return_condition?: string | null
+          return_reason_code?: string | null
+          return_request_id: string
+          serial_number?: string | null
+          tax_amount?: number | null
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          discount_amount?: number | null
+          disposition_code?: string | null
+          id?: string
+          inspected_by?: string | null
+          inspection_date?: string | null
+          line_total?: number
+          lot_number?: string | null
+          original_transaction_item_id?: string | null
+          product_id?: string
+          quality_notes?: string | null
+          quantity_already_returned?: number | null
+          quantity_purchased?: number
+          quantity_returned?: number
+          return_condition?: string | null
+          return_reason_code?: string | null
+          return_request_id?: string
+          serial_number?: string | null
+          tax_amount?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_original_transaction_item_id_fkey"
+            columns: ["original_transaction_item_id"]
+            isOneToOne: false
+            referencedRelation: "pos_transaction_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_return_request_id_fkey"
+            columns: ["return_request_id"]
+            isOneToOne: false
+            referencedRelation: "return_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_reason_codes: {
+        Row: {
+          active: boolean | null
+          category: string
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          requires_manager_approval: boolean | null
+        }
+        Insert: {
+          active?: boolean | null
+          category: string
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          requires_manager_approval?: boolean | null
+        }
+        Update: {
+          active?: boolean | null
+          category?: string
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          requires_manager_approval?: boolean | null
+        }
+        Relationships: []
+      }
+      return_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          brand_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          customer_id: string | null
+          customer_signature: string | null
+          id: string
+          notes: string | null
+          original_transaction_id: string | null
+          photos: Json | null
+          processing_fee: number | null
+          refund_method: string | null
+          refund_reference: string | null
+          refund_status: string | null
+          requested_by: string | null
+          requires_approval: boolean | null
+          restocking_fee: number | null
+          return_method: string | null
+          return_type: string | null
+          rma_date: string
+          rma_number: string
+          status: string | null
+          subtotal: number
+          tax_amount: number | null
+          total_refund_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          brand_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_signature?: string | null
+          id?: string
+          notes?: string | null
+          original_transaction_id?: string | null
+          photos?: Json | null
+          processing_fee?: number | null
+          refund_method?: string | null
+          refund_reference?: string | null
+          refund_status?: string | null
+          requested_by?: string | null
+          requires_approval?: boolean | null
+          restocking_fee?: number | null
+          return_method?: string | null
+          return_type?: string | null
+          rma_date?: string
+          rma_number: string
+          status?: string | null
+          subtotal: number
+          tax_amount?: number | null
+          total_refund_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          brand_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_signature?: string | null
+          id?: string
+          notes?: string | null
+          original_transaction_id?: string | null
+          photos?: Json | null
+          processing_fee?: number | null
+          refund_method?: string | null
+          refund_reference?: string | null
+          refund_status?: string | null
+          requested_by?: string | null
+          requires_approval?: boolean | null
+          restocking_fee?: number | null
+          return_method?: string | null
+          return_type?: string | null
+          rma_date?: string
+          rma_number?: string
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          total_refund_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_requests_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_requests_original_transaction_id_fkey"
+            columns: ["original_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "pos_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           conditions: Json | null
@@ -1225,8 +1494,13 @@ export type Database = {
       }
       generate_credit_note_number: { Args: never; Returns: string }
       generate_customer_number: { Args: never; Returns: string }
+      generate_rma_number: { Args: never; Returns: string }
       generate_transaction_number: { Args: never; Returns: string }
       get_user_role: { Args: { user_uuid: string }; Returns: string }
+      process_return_inventory: {
+        Args: { p_return_request_id: string }
+        Returns: boolean
+      }
       update_inventory_quantity: {
         Args: { p_product_id: string; p_quantity_change: number }
         Returns: undefined

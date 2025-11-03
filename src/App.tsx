@@ -20,6 +20,7 @@ import Sales from "./pages/Sales";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
 import SeedUsers from "./pages/SeedUsers";
+import Returns from "./pages/Returns";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/sales" element={<Sales />} />
                 <Route path="/transactions" element={<Transactions />} />
+                <Route path="/returns" element={<Returns />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/roles" element={<Roles />} />

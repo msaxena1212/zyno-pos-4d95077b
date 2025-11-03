@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Package, Users, FileText, BarChart3, DollarSign, Shield, Tag, Workflow, UserCircle } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, FileText, BarChart3, DollarSign, Shield, Tag, Workflow, UserCircle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -10,6 +10,7 @@ const allNavigation = [
   { name: "Customers", href: "/customers", icon: UserCircle, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
   { name: "Sales", href: "/sales", icon: DollarSign, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
   { name: "Transactions", href: "/transactions", icon: FileText, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
+  { name: "Returns", href: "/returns", icon: RotateCcw, roles: ['admin', 'manager', 'cashier'] },
   { name: "Reports", href: "/reports", icon: BarChart3, roles: ['admin', 'manager', 'cashier', 'marketing_manager', 'stock_manager'] },
   { name: "Users", href: "/users", icon: Users, roles: ['admin', 'manager'] },
   { name: "Roles", href: "/roles", icon: Shield, roles: ['admin', 'manager'] },
