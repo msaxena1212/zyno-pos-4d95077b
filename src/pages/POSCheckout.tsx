@@ -10,8 +10,9 @@ import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Search, Receip
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrand } from "@/contexts/BrandContext";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PaymentGateway } from "@/components/PaymentGateway";
+import { getCashbackAccount, calculateCashbackAmount, recordCashbackEarned, redeemCashback } from "@/lib/cashback";
 
 interface Product {
   id: string;
@@ -50,6 +51,9 @@ export default function POSCheckout() {
   const [lastReceipt, setLastReceipt] = useState<any>(null);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [paymentGatewayOpen, setPaymentGatewayOpen] = useState(false);
+  const [cashbackBalance, setCashbackBalance] = useState<number>(0);
+  const [cashbackToUse, setCashbackToUse] = useState<number>(0);
+  const [showCashbackDialog, setShowCashbackDialog] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     first_name: "",
     last_name: "",
@@ -139,7 +143,8 @@ export default function POSCheckout() {
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() - calculateDiscount() + calculateTax();
+    const totalBeforeCashback = calculateSubtotal() - calculateDiscount() + calculateTax();
+    return Math.max(0, totalBeforeCashback - cashbackToUse);
   };
 
   const calculateChange = () => {

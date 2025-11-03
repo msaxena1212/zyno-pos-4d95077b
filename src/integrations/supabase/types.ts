@@ -97,6 +97,266 @@ export type Database = {
         }
         Relationships: []
       }
+      cashback_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          cashback_account_id: string
+          created_at: string | null
+          created_by: string | null
+          customer_id: string
+          description: string | null
+          earning_rate: number | null
+          earning_source: string | null
+          expires_at: string | null
+          id: string
+          status: string | null
+          transaction_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          cashback_account_id: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_id: string
+          description?: string | null
+          earning_rate?: number | null
+          earning_source?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string | null
+          transaction_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          cashback_account_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string
+          description?: string | null
+          earning_rate?: number | null
+          earning_source?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string | null
+          transaction_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashback_transactions_cashback_account_id_fkey"
+            columns: ["cashback_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_cashback_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashback_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashback_transactions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "pos_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_note_items: {
+        Row: {
+          created_at: string | null
+          credit_note_id: string
+          id: string
+          line_total: number
+          product_id: string | null
+          quantity: number
+          tax_amount: number | null
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          credit_note_id: string
+          id?: string
+          line_total: number
+          product_id?: string | null
+          quantity: number
+          tax_amount?: number | null
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          credit_note_id?: string
+          id?: string
+          line_total?: number
+          product_id?: string | null
+          quantity?: number
+          tax_amount?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_note_items_credit_note_id_fkey"
+            columns: ["credit_note_id"]
+            isOneToOne: false
+            referencedRelation: "credit_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_note_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_notes: {
+        Row: {
+          approved_by: string | null
+          brand_id: string | null
+          created_at: string | null
+          created_by: string | null
+          credit_note_date: string
+          credit_note_number: string
+          customer_id: string | null
+          expiry_date: string | null
+          id: string
+          notes: string | null
+          original_transaction_id: string | null
+          processing_fee: number | null
+          return_condition: string | null
+          return_reason: string | null
+          status: string | null
+          subtotal: number
+          tax_amount: number | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          brand_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          credit_note_date?: string
+          credit_note_number: string
+          customer_id?: string | null
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          original_transaction_id?: string | null
+          processing_fee?: number | null
+          return_condition?: string | null
+          return_reason?: string | null
+          status?: string | null
+          subtotal: number
+          tax_amount?: number | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          brand_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          credit_note_date?: string
+          credit_note_number?: string
+          customer_id?: string | null
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          original_transaction_id?: string | null
+          processing_fee?: number | null
+          return_condition?: string | null
+          return_reason?: string | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_notes_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_original_transaction_id_fkey"
+            columns: ["original_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "pos_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_cashback_accounts: {
+        Row: {
+          brand_id: string | null
+          created_at: string | null
+          current_balance: number
+          customer_id: string
+          id: string
+          total_earned: number
+          total_expired: number
+          total_redeemed: number
+          updated_at: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string | null
+          current_balance?: number
+          customer_id: string
+          id?: string
+          total_earned?: number
+          total_expired?: number
+          total_redeemed?: number
+          updated_at?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string | null
+          current_balance?: number
+          customer_id?: string
+          id?: string
+          total_earned?: number
+          total_expired?: number
+          total_redeemed?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_cashback_accounts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_cashback_accounts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -959,6 +1219,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_cashback: {
+        Args: { p_customer_id: string; p_transaction_amount: number }
+        Returns: number
+      }
+      generate_credit_note_number: { Args: never; Returns: string }
       generate_customer_number: { Args: never; Returns: string }
       generate_transaction_number: { Args: never; Returns: string }
       get_user_role: { Args: { user_uuid: string }; Returns: string }
