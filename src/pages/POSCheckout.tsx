@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Search, Receipt, Package } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Search, Receipt, Package, Tag, Percent } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrand } from "@/contexts/BrandContext";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,10 @@ export default function POSCheckout() {
   const [cashbackBalance, setCashbackBalance] = useState<number>(0);
   const [cashbackToUse, setCashbackToUse] = useState<number>(0);
   const [showCashbackDialog, setShowCashbackDialog] = useState(false);
+  const [offerCode, setOfferCode] = useState("");
+  const [appliedOffer, setAppliedOffer] = useState<any>(null);
+  const [offerDiscount, setOfferDiscount] = useState<number>(0);
+  const [editingDiscount, setEditingDiscount] = useState<string | null>(null);
   const [newCustomer, setNewCustomer] = useState({
     first_name: "",
     last_name: "",
@@ -131,7 +135,8 @@ export default function POSCheckout() {
   };
 
   const calculateDiscount = () => {
-    return cart.reduce((sum, item) => sum + item.discount, 0);
+    const itemDiscounts = cart.reduce((sum, item) => sum + item.discount, 0);
+    return itemDiscounts + offerDiscount;
   };
 
   const calculateTax = () => {
@@ -337,6 +342,8 @@ export default function POSCheckout() {
         items: cart,
         change: calculateChange(),
         payment_method: paymentMethod,
+        appliedOffer: appliedOffer,
+        offerDiscount: offerDiscount,
       });
       setReceiptOpen(true);
 
@@ -345,6 +352,9 @@ export default function POSCheckout() {
       setSelectedCustomer("");
       setAmountReceived("");
       setPaymentMethod("cash");
+      setOfferCode("");
+      setAppliedOffer(null);
+      setOfferDiscount(0);
     } catch (error: any) {
       console.error("Transaction error:", error);
       toast.error(error.message || "Transaction failed. Please try again.");
@@ -493,6 +503,82 @@ export default function POSCheckout() {
     c.customer_number.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
+  const applyOfferCode = async () => {
+    if (!offerCode.trim()) {
+      toast.error("Please enter an offer code");
+      return;
+    }
+
+    if (cart.length === 0) {
+      toast.error("Add items to cart before applying offer");
+      return;
+    }
+
+    try {
+      const { data: offer, error } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("code", offerCode.toUpperCase())
+        .eq("status", "active")
+        .single();
+
+      if (error || !offer) {
+        toast.error("Invalid or expired offer code");
+        return;
+      }
+
+      // Check date validity
+      const now = new Date();
+      if (offer.start_date && new Date(offer.start_date) > now) {
+        toast.error("This offer is not yet active");
+        return;
+      }
+      if (offer.end_date && new Date(offer.end_date) < now) {
+        toast.error("This offer has expired");
+        return;
+      }
+
+      // Check minimum purchase
+      if (offer.min_purchase_amount && calculateSubtotal() < offer.min_purchase_amount) {
+        toast.error(`Minimum purchase of ₹${offer.min_purchase_amount} required`);
+        return;
+      }
+
+      // Calculate discount
+      let discount = 0;
+      if (offer.discount_percentage) {
+        discount = (calculateSubtotal() * offer.discount_percentage) / 100;
+        if (offer.max_discount_cap) {
+          discount = Math.min(discount, offer.max_discount_cap);
+        }
+      } else if (offer.discount_value) {
+        discount = offer.discount_value;
+      }
+
+      setAppliedOffer(offer);
+      setOfferDiscount(discount);
+      toast.success(`Offer applied! You save ₹${discount.toFixed(2)}`);
+    } catch (error: any) {
+      toast.error("Failed to apply offer code");
+    }
+  };
+
+  const removeOffer = () => {
+    setAppliedOffer(null);
+    setOfferDiscount(0);
+    setOfferCode("");
+    toast.info("Offer removed");
+  };
+
+  const updateItemDiscount = (productId: string, discount: number) => {
+    setCart(cart.map(item => 
+      item.product.id === productId 
+        ? { ...item, discount: Math.max(0, discount) }
+        : item
+    ));
+    setEditingDiscount(null);
+  };
+
   const handleAddCustomer = async () => {
     if (!newCustomer.first_name || !newCustomer.last_name || !newCustomer.phone) {
       toast.error("Please fill in all required fields");
@@ -585,37 +671,73 @@ export default function POSCheckout() {
             ) : (
               <div className="space-y-4">
                 {cart.map((item) => (
-                  <div key={item.product.id} className="flex items-center justify-between border-b pb-4">
-                    <div className="flex-1">
-                      <p className="font-semibold">{item.product.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        ₹{item.product.unit_price.toFixed(2)} × {item.quantity} = ₹{(item.product.unit_price * item.quantity).toFixed(2)}
-                      </p>
+                  <div key={item.product.id} className="border-b pb-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold">{item.product.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ₹{item.product.unit_price.toFixed(2)} × {item.quantity} = ₹{(item.product.unit_price * item.quantity).toFixed(2)}
+                        </p>
+                        {item.discount > 0 && (
+                          <p className="text-sm text-primary">
+                            Item discount: -₹{item.discount.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.product.id, -1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-12 text-center">{item.quantity}</span>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.product.id, 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => setEditingDiscount(editingDiscount === item.product.id ? null : item.product.id)}
+                          title="Add discount"
+                        >
+                          <Percent className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          onClick={() => removeFromCart(item.product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => updateQuantity(item.product.id, -1)}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-12 text-center">{item.quantity}</span>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => updateQuantity(item.product.id, 1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() => removeFromCart(item.product.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {editingDiscount === item.product.id && (
+                      <div className="flex items-center gap-2 pt-2">
+                        <Label className="text-sm whitespace-nowrap">Item Discount:</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={item.product.unit_price * item.quantity}
+                          placeholder="0.00"
+                          defaultValue={item.discount}
+                          className="h-8"
+                          onBlur={(e) => updateItemDiscount(item.product.id, parseFloat(e.target.value) || 0)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              updateItemDiscount(item.product.id, parseFloat(e.currentTarget.value) || 0);
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-muted-foreground">₹</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -689,15 +811,63 @@ export default function POSCheckout() {
             <CardTitle>Order Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {cart.length > 0 && (
+              <div className="space-y-2 pb-4 border-b">
+                <Label className="text-sm font-medium">Apply Offer Code</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter offer code"
+                    value={offerCode}
+                    onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
+                    disabled={!!appliedOffer}
+                    className="flex-1"
+                  />
+                  {appliedOffer ? (
+                    <Button onClick={removeOffer} variant="outline" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button onClick={applyOfferCode} size="icon">
+                      <Tag className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {appliedOffer && (
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <Badge variant="secondary" className="text-xs">
+                      {appliedOffer.code}
+                    </Badge>
+                    <span>{appliedOffer.name}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
                 <span>₹{calculateSubtotal().toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Discount:</span>
-                <span className="text-destructive">-₹{calculateDiscount().toFixed(2)}</span>
-              </div>
+              {calculateDiscount() > 0 && (
+                <>
+                  {cart.some(item => item.discount > 0) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Item discounts:</span>
+                      <span className="text-primary">-₹{cart.reduce((sum, item) => sum + item.discount, 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {offerDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Offer discount:</span>
+                      <span className="text-primary">-₹{offerDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-medium">
+                    <span>Total Discount:</span>
+                    <span className="text-primary">-₹{calculateDiscount().toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span>Tax:</span>
                 <span>₹{calculateTax().toFixed(2)}</span>
@@ -804,6 +974,19 @@ export default function POSCheckout() {
                     <span>Subtotal:</span>
                     <span>₹{lastReceipt.subtotal.toFixed(2)}</span>
                   </div>
+                  {lastReceipt.discount_amount > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm text-primary">
+                        <span>Discount:</span>
+                        <span>-₹{lastReceipt.discount_amount.toFixed(2)}</span>
+                      </div>
+                      {lastReceipt.appliedOffer && (
+                        <div className="text-xs text-muted-foreground">
+                          Applied: {lastReceipt.appliedOffer.name} ({lastReceipt.appliedOffer.code})
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span>Tax:</span>
                     <span>₹{lastReceipt.tax_amount.toFixed(2)}</span>
