@@ -515,17 +515,24 @@ export default function POSCheckout() {
     }
 
     try {
-      const { data: offer, error } = await supabase
+      const { data: offers, error } = await supabase
         .from("offers")
         .select("*")
         .eq("code", offerCode.toUpperCase())
-        .eq("status", "active")
-        .single();
+        .eq("status", "active");
 
-      if (error || !offer) {
+      if (error) {
+        console.error("Offer lookup error:", error);
+        toast.error("Failed to validate offer code");
+        return;
+      }
+
+      if (!offers || offers.length === 0) {
         toast.error("Invalid or expired offer code");
         return;
       }
+
+      const offer = offers[0];
 
       // Check date validity
       const now = new Date();
